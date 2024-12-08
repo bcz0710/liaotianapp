@@ -25,68 +25,33 @@ import com.luck.picture.lib.widget.longimage.SubsamplingScaleImageView;
 
 public class GlideEngine implements ImageEngine {
 
-    private static final int GRID_IMAGE_SIZE = 200;
-    private static final int FOLDER_IMAGE_SIZE = 180;
-
-    // 单例模式，确保全局只有一个实例
-    private static GlideEngine instance;
-
-    private GlideEngine() {
-    }
-
-    public static GlideEngine getInstance() {
-        if (instance == null) {
-            synchronized (GlideEngine.class) {
-                if (instance == null) {
-                    instance = new GlideEngine();
-                }
-            }
-        }
-        return instance;
-    }
-
     /**
-     * 通用图片加载
+     * 加载图片
      *
-     * @param context   上下文
-     * @param url       图片路径
-     * @param imageView 承载图片的ImageView
+     * @param context
+     * @param url
+     * @param imageView
      */
-    private void loadImageWithGlide(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView) {
+    @Override
+    public void loadImage(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView) {
         Glide.with(context)
                 .load(url)
                 .into(imageView);
     }
 
     /**
-     * 判断是否为长图并加载到相应的控件
+     * 加载网络图片适配长图方案
+     * # 注意：此方法只有加载网络图片才会回调
+     *
+     * @param context
+     * @param url
+     * @param imageView
+     * @param longImageView
+     * @param callback      网络图片加载回调监听 {link after version 2.5.1 Please use the #OnImageCompleteCallback#}
      */
-    private void handleLongImage(Bitmap resource, ImageView imageView, SubsamplingScaleImageView longImageView) {
-        boolean isLongImage = MediaUtils.isLongImg(resource.getWidth(), resource.getHeight());
-        longImageView.setVisibility(isLongImage ? View.VISIBLE : View.GONE);
-        imageView.setVisibility(isLongImage ? View.GONE : View.VISIBLE);
-
-        if (isLongImage) {
-            // 设置长图显示属性
-            longImageView.setQuickScaleEnabled(true);
-            longImageView.setZoomEnabled(true);
-            longImageView.setDoubleTapZoomDuration(100);
-            longImageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_CROP);
-            longImageView.setDoubleTapZoomDpi(SubsamplingScaleImageView.ZOOM_FOCUS_CENTER);
-            longImageView.setImage(ImageSource.bitmap(resource), new ImageViewState(0, new PointF(0, 0), 0));
-        } else {
-            // 普通图片
-            imageView.setImageBitmap(resource);
-        }
-    }
-
     @Override
-    public void loadImage(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView) {
-        loadImageWithGlide(context, url, imageView);
-    }
-
-    @Override
-    public void loadImage(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView,
+    public void loadImage(@NonNull Context context, @NonNull String url,
+                          @NonNull ImageView imageView,
                           SubsamplingScaleImageView longImageView, OnImageCompleteCallback callback) {
         Glide.with(context)
                 .asBitmap()
@@ -94,26 +59,61 @@ public class GlideEngine implements ImageEngine {
                 .into(new ImageViewTarget<Bitmap>(imageView) {
                     @Override
                     public void onLoadStarted(@Nullable Drawable placeholder) {
-                        if (callback != null) callback.onShowLoading();
+                        super.onLoadStarted(placeholder);
+                        if (callback != null) {
+                            callback.onShowLoading();
+                        }
                     }
 
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                        if (callback != null) callback.onHideLoading();
+                        super.onLoadFailed(errorDrawable);
+                        if (callback != null) {
+                            callback.onHideLoading();
+                        }
                     }
 
                     @Override
                     protected void setResource(@Nullable Bitmap resource) {
-                        if (callback != null) callback.onHideLoading();
+                        if (callback != null) {
+                            callback.onHideLoading();
+                        }
                         if (resource != null) {
-                            handleLongImage(resource, imageView, longImageView);
+                            boolean eqLongImage = MediaUtils.isLongImg(resource.getWidth(),
+                                    resource.getHeight());
+                            longImageView.setVisibility(eqLongImage ? View.VISIBLE : View.GONE);
+                            imageView.setVisibility(eqLongImage ? View.GONE : View.VISIBLE);
+                            if (eqLongImage) {
+                                // 加载长图
+                                longImageView.setQuickScaleEnabled(true);
+                                longImageView.setZoomEnabled(true);
+                                longImageView.setDoubleTapZoomDuration(100);
+                                longImageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_CROP);
+                                longImageView.setDoubleTapZoomDpi(SubsamplingScaleImageView.ZOOM_FOCUS_CENTER);
+                                longImageView.setImage(ImageSource.bitmap(resource),
+                                        new ImageViewState(0, new PointF(0, 0), 0));
+                            } else {
+                                // 普通图片
+                                imageView.setImageBitmap(resource);
+                            }
                         }
                     }
                 });
     }
 
+    /**
+     * 加载网络图片适配长图方案
+     * # 注意：此方法只有加载网络图片才会回调
+     *
+     * @param context
+     * @param url
+     * @param imageView
+     * @param longImageView
+     * @ 已废弃
+     */
     @Override
-    public void loadImage(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView,
+    public void loadImage(@NonNull Context context, @NonNull String url,
+                          @NonNull ImageView imageView,
                           SubsamplingScaleImageView longImageView) {
         Glide.with(context)
                 .asBitmap()
@@ -122,46 +122,104 @@ public class GlideEngine implements ImageEngine {
                     @Override
                     protected void setResource(@Nullable Bitmap resource) {
                         if (resource != null) {
-                            handleLongImage(resource, imageView, longImageView);
+                            boolean eqLongImage = MediaUtils.isLongImg(resource.getWidth(),
+                                    resource.getHeight());
+                            longImageView.setVisibility(eqLongImage ? View.VISIBLE : View.GONE);
+                            imageView.setVisibility(eqLongImage ? View.GONE : View.VISIBLE);
+                            if (eqLongImage) {
+                                // 加载长图
+                                longImageView.setQuickScaleEnabled(true);
+                                longImageView.setZoomEnabled(true);
+                                longImageView.setDoubleTapZoomDuration(100);
+                                longImageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_CROP);
+                                longImageView.setDoubleTapZoomDpi(SubsamplingScaleImageView.ZOOM_FOCUS_CENTER);
+                                longImageView.setImage(ImageSource.bitmap(resource),
+                                        new ImageViewState(0, new PointF(0, 0), 0));
+                            } else {
+                                // 普通图片
+                                imageView.setImageBitmap(resource);
+                            }
                         }
                     }
                 });
     }
 
+    /**
+     * 加载相册目录
+     *
+     * @param context   上下文
+     * @param url       图片路径
+     * @param imageView 承载图片ImageView
+     */
     @Override
     public void loadFolderImage(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView) {
         Glide.with(context)
                 .asBitmap()
                 .load(url)
-                .override(FOLDER_IMAGE_SIZE, FOLDER_IMAGE_SIZE)
+                .override(180, 180)
                 .centerCrop()
                 .sizeMultiplier(0.5f)
                 .apply(new RequestOptions().placeholder(com.luck.picture.lib.R.drawable.picture_image_placeholder))
                 .into(new BitmapImageViewTarget(imageView) {
                     @Override
                     protected void setResource(Bitmap resource) {
-                        RoundedBitmapDrawable roundedBitmap = RoundedBitmapDrawableFactory.create(context.getResources(), resource);
-                        roundedBitmap.setCornerRadius(8);
-                        imageView.setImageDrawable(roundedBitmap);
+                        RoundedBitmapDrawable circularBitmapDrawable =
+                                RoundedBitmapDrawableFactory.
+                                        create(context.getResources(), resource);
+                        circularBitmapDrawable.setCornerRadius(8);
+                        imageView.setImageDrawable(circularBitmapDrawable);
                     }
                 });
     }
 
+
+    /**
+     * 加载gif
+     *
+     * @param context   上下文
+     * @param url       图片路径
+     * @param imageView 承载图片ImageView
+     */
     @Override
-    public void loadAsGifImage(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView) {
+    public void loadAsGifImage(@NonNull Context context, @NonNull String url,
+                               @NonNull ImageView imageView) {
         Glide.with(context)
                 .asGif()
                 .load(url)
                 .into(imageView);
     }
 
+    /**
+     * 加载图片列表图片
+     *
+     * @param context   上下文
+     * @param url       图片路径
+     * @param imageView 承载图片ImageView
+     */
     @Override
     public void loadGridImage(@NonNull Context context, @NonNull String url, @NonNull ImageView imageView) {
         Glide.with(context)
                 .load(url)
-                .override(GRID_IMAGE_SIZE, GRID_IMAGE_SIZE)
+                .override(200, 200)
                 .centerCrop()
                 .apply(new RequestOptions().placeholder(com.luck.picture.lib.R.drawable.picture_image_placeholder))
                 .into(imageView);
+    }
+
+
+    private GlideEngine() {
+    }
+
+    private static GlideEngine instance;
+
+    public static GlideEngine createGlideEngine() {
+        if (null == instance) {
+            synchronized (GlideEngine.class) {
+                if (null == instance) {
+                    instance = new GlideEngine();
+                }
+            }
+        }
+        return instance;
     }
 }

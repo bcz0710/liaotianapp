@@ -1,32 +1,38 @@
 package com.example.chat.util;
 
+/*
+ *  描述：    字母导航
+ */
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 
 import com.example.chat.R;
 
+
 public class LettersView extends View {
 
-    // Constants
+    //TAG
     private static final String TAG = "LettersView";
-    private static final int DEFAULT_TEXT_SIZE = 40;
-    private static final int SELECTED_TEXT_SIZE = 50;
-    private static final int TEXT_COLOR_NORMAL = Color.BLACK;
-    private static final int TEXT_COLOR_SELECTED = Color.parseColor("#FF4081");  // colorPrimary (Example)
 
+    //字母数组,#代表未知，比如数字开头
     private String[] strChars = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
             "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "#"};
-
+    //画笔
     private Paint mPaint;
-    private int checkIndex = -1;
+    //选中字母的下标
+    private int checkIndex;
+    //字母提示的TextView,需要set/get动态设置显示内容
     private TextView mTextView;
+    //接口回调
     private OnLettersListViewListener onLettersListViewListener;
 
     public LettersView(Context context) {
@@ -45,121 +51,135 @@ public class LettersView extends View {
     }
 
     /**
-     * Initialize the Paint object for drawing.
+     * 初始化
      */
     private void init() {
+        //实例化画笔
         mPaint = new Paint();
+        //设置style
         mPaint.setTypeface(Typeface.DEFAULT_BOLD);
-        mPaint.setAntiAlias(true);  // Enable anti-aliasing for smoother text
+        //设置抗锯齿
+        mPaint.setAntiAlias(true);
     }
 
     /**
-     * Draw the letters on the canvas.
+     * 绘制
+     *
+     * @param canvas
      */
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
+        /**
+         * 为了排列26个字母，我们可以用坐标点来计算，X居中，Y为 1/27 的递加计算
+         * 首先获取到我们View的宽高
+         */
         int viewWidth = getWidth();
         int viewHeight = getHeight();
+        //计算一个字母的高度
         int singleHeight = viewHeight / strChars.length;
-
-        // Loop through the characters and draw them
+        //循环绘制字母
         for (int i = 0; i < strChars.length; i++) {
-            setTextProperties(i);  // Set text properties (color, size)
-
+            //设置选中字母的颜色
+            if (i == checkIndex) {
+                mPaint.setColor(getResources().getColor(R.color.colorPrimary));
+                mPaint.setTextSize(50);
+            } else {
+                mPaint.setColor(Color.BLACK);
+                //设置字体大小
+                mPaint.setTextSize(40);
+            }
+            /**
+             * 绘制字母
+             * x: （view的宽度 - 文本的宽度）/ 2
+             * y:  singleHeight * x + singleHeight  //单个字母的高度 + 最上面的字幕空白高度
+             */
             float lettersX = (viewWidth - mPaint.measureText(strChars[i])) / 2;
             float lettersY = singleHeight * i + singleHeight;
-
+            //绘制
             canvas.drawText(strChars[i], lettersX, lettersY, mPaint);
+            //重绘
+            mPaint.reset();
         }
-    }
-
-    /**
-     * Set text properties like color and size based on whether the letter is selected.
-     */
-    private void setTextProperties(int index) {
-        if (index == checkIndex) {
-            mPaint.setColor(TEXT_COLOR_SELECTED);
-            mPaint.setTextSize(SELECTED_TEXT_SIZE);
-        } else {
-            mPaint.setColor(TEXT_COLOR_NORMAL);
-            mPaint.setTextSize(DEFAULT_TEXT_SIZE);
-        }
-    }
-
-    /**
-     * Handle touch events (e.g. when user is scrolling and selecting a letter).
-     */
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        float y = event.getY();
-        int c = (int) (y / getHeight() * strChars.length);  // Calculate the selected letter index
-
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_MOVE:
-                if (checkIndex != c) {  // Only update if index changes
-                    checkIndex = c;
-                    updateLetter(c);
-                }
-                break;
-
-            case MotionEvent.ACTION_UP:
-                checkIndex = -1;
-                resetLetterView();
-                break;
-        }
-        return true;
-    }
-
-    /**
-     * Update the displayed letter in the TextView and notify listener.
-     */
-    private void updateLetter(int index) {
-        if (index >= 0 && index < strChars.length) {
-            if (onLettersListViewListener != null) {
-                onLettersListViewListener.onLettersListener(strChars[index]);
-            }
-
-            if (mTextView != null) {
-                mTextView.setVisibility(View.VISIBLE);
-                mTextView.setText(strChars[index]);
-            }
-            invalidate();  // Only invalidate once when the index changes
-        }
-    }
-
-    /**
-     * Reset the visibility of the TextView when user stops touching.
-     */
-    private void resetLetterView() {
-        if (mTextView != null) {
-            mTextView.setVisibility(View.INVISIBLE);
-        }
-        invalidate();  // Invalidate to remove selection highlight
-    }
-
-    public void setmTextView(TextView mTextView) {
-        this.mTextView = mTextView;
     }
 
     public TextView getmTextView() {
         return mTextView;
     }
 
-    public void setOnLettersListViewListener(OnLettersListViewListener listener) {
-        this.onLettersListViewListener = listener;
+    public void setmTextView(TextView mTextView) {
+        this.mTextView = mTextView;
+    }
+
+    /**
+     * 事件分发
+     *
+     * @param event
+     * @return
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        //判断手势
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_MOVE:
+                //setBackgroundResource(R.color.colorPrimary);
+                //获取点击的Y坐标，以此来判断选中的字母
+                float y = event.getY();
+                Log.i(TAG, "y:" + y);
+                //第一次被选中的下标
+                int oldCheckIndex = checkIndex;
+                /**
+                 * 计算选中的字母
+                 * strChars[当前Y / View的高度 * 字母个数]
+                 */
+                int c = (int) (y / getHeight() * strChars.length);
+                Log.i(TAG, "c:" + c);
+                //判断移动
+                if (oldCheckIndex != c) {
+                    //不能越界
+                    if (c >= 0 && c < strChars.length) {
+                        //效果联动
+                        if (onLettersListViewListener != null) {
+                            onLettersListViewListener.onLettersListener(strChars[c]);
+                        }
+                        if (mTextView != null) {
+                            mTextView.setVisibility(View.VISIBLE);
+                            mTextView.setText(strChars[c]);
+                        }
+                    }
+                    checkIndex = c;
+                    invalidate();
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                //设置透明背景
+                setBackgroundResource(android.R.color.transparent);
+                //恢复不选中
+                checkIndex = -1;
+                invalidate();
+                //是否显示
+                if (mTextView != null) {
+                    mTextView.setVisibility(View.INVISIBLE);
+                }
+                break;
+        }
+        return true;
     }
 
     public OnLettersListViewListener getOnLettersListViewListener() {
         return onLettersListViewListener;
     }
 
+    public void setOnLettersListViewListener(OnLettersListViewListener onLettersListViewListener) {
+        this.onLettersListViewListener = onLettersListViewListener;
+    }
+
     /**
-     * Interface for communicating the selected letter to the outside world.
+     * 接口回调/ListView联动
      */
     public interface OnLettersListViewListener {
-        void onLettersListener(String letter);
+        public void onLettersListener(String s);
     }
 }
+

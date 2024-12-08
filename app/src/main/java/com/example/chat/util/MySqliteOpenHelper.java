@@ -1,122 +1,64 @@
 package com.example.chat.util;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+/**
+ * description :数据库管理类,负责管理数据库的创建、升级工作
+ */
 public class MySqliteOpenHelper extends SQLiteOpenHelper {
-
+    //数据库名字
     public static final String DB_NAME = "chat.db";
-    public static final int DB_VERSION = 2;  // 假设我们更新到版本2
 
-    // 创建表 SQL 语句
-    private static final String CREATE_USER_TABLE =
-            "CREATE TABLE user (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "account TEXT, " +
-                    "password TEXT, " +
-                    "name TEXT, " +
-                    "sex TEXT, " +
-                    "photo TEXT, " +
-                    "letter TEXT)";
-
-    private static final String CREATE_CONTACTS_TABLE =
-            "CREATE TABLE contacts (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "userId INTEGER, " +
-                    "toUserId INTEGER)";
-
-    private static final String CREATE_CHAT_TABLE =
-            "CREATE TABLE chat (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "fromUserId INTEGER, " +
-                    "toUserId INTEGER, " +
-                    "content TEXT, " +
-                    "date INTEGER, " +
-                    "status TEXT)";
-
-    private static final String CREATE_MESSAGE_TABLE =
-            "CREATE TABLE message (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "sender_id INTEGER, " +
-                    "receiver_id INTEGER, " +
-                    "message_content TEXT, " +
-                    "timestamp INTEGER, " +
-                    "status TEXT)";
+    //数据库版本
+    public static final int DB_VERSION = 1;
+    private Context context;
 
     public MySqliteOpenHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
+        this.context = context;
     }
 
+    /**
+     * 在数据库首次创建的时候调用，创建表以及可以进行一些表数据的初始化
+     *
+     * @param db
+     */
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // 创建表
-        db.execSQL(CREATE_USER_TABLE);
-        db.execSQL(CREATE_CONTACTS_TABLE);
-        db.execSQL(CREATE_CHAT_TABLE);
-        db.execSQL(CREATE_MESSAGE_TABLE);
+        //创建表
+        //_id为主键并且自增长一般命名为_id
+        String userSql = "create table user(id integer primary key autoincrement,account, password,name,sex,photo,letter)";//用户
+        String contactsSql = "create table contacts(id integer primary key autoincrement,userId,toUserId)";//添加好友
+        String chatSql = "create table chat(id integer primary key autoincrement,fromUserId,toUserId,content,date,status)";//聊天
+        db.execSQL(userSql);
+        db.execSQL(contactsSql);
+        db.execSQL(chatSql);
     }
 
+    /**
+     * 数据库升级的时候回调该方法，在数据库版本号DB_VERSION升级的时候才会调用
+     *
+     * @param db
+     * @param oldVersion
+     * @param newVersion
+     */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < newVersion) {
-            // 版本升级时可以进行表结构的更改
-            if (oldVersion == 1) {
-                db.execSQL("ALTER TABLE user ADD COLUMN email TEXT");  // 添加新字段
-            }
-        }
+
+        //给表添加一个字段
+        //db.execSQL("alter table person add age integer");
     }
 
+    /**
+     * 数据库打开的时候回调该方法
+     *
+     * @param db
+     */
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
     }
-
-    // 插入数据
-    public long insertUser(SQLiteDatabase db, String account, String password, String name, String sex, String photo, String letter) {
-        ContentValues values = new ContentValues();
-        values.put("account", account);
-        values.put("password", password);
-        values.put("name", name);
-        values.put("sex", sex);
-        values.put("photo", photo);
-        values.put("letter", letter);
-        return db.insert("user", null, values);
-    }
-
-    // 查询数据
-    public Cursor getUserById(SQLiteDatabase db, int userId) {
-        return db.query("user", null, "id = ?", new String[]{String.valueOf(userId)}, null, null, null);
-    }
-
-    // 更新数据
-    public int updateUser(SQLiteDatabase db, int userId, String name, String sex, String photo) {
-        ContentValues values = new ContentValues();
-        values.put("name", name);
-        values.put("sex", sex);
-        values.put("photo", photo);
-        return db.update("user", values, "id = ?", new String[]{String.valueOf(userId)});
-    }
-
-    // 删除数据
-    public int deleteUser(SQLiteDatabase db, int userId) {
-        return db.delete("user", "id = ?", new String[]{String.valueOf(userId)});
-    }
-
-    // 使用事务插入数据
-    public void insertUserWithTransaction(SQLiteDatabase db, String account, String password, String name) {
-        db.beginTransaction();
-        try {
-            ContentValues values = new ContentValues();
-            values.put("account", account);
-            values.put("password", password);
-            values.put("name", name);
-            db.insert("user", null, values);
-            db.setTransactionSuccessful();
-        } finally {
-            db.endTransaction();
-        }
-    }
 }
+

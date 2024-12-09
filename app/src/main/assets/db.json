@@ -1,0 +1,23 @@
+{
+  "user": [
+    {
+      "account": "001",
+      "password": "001",
+      "name": "管理员",
+      "sex": "男",
+      "photo": ""
+    },{
+      "account": "1",
+      "password": "1",
+      "name": "Koi",
+      "sex": "男",
+      "photo": ""
+    },{
+      "account": "2",
+      "password": "2",
+      "name": "Koi2",
+      "sex": "男",
+      "photo": ""
+    }
+  ]
+}

@@ -2,7 +2,6 @@ package com.example.chat.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,84 +11,66 @@ import java.util.Map;
  * 数据持久化工具类
  */
 public class SPUtils {
-
-    public static final String FILE_NAME = "share_data";
-
-    // 是否第一次进入
-    public static final String IF_FIRST = "is_first";
-    // 是否为管理员
-    public static final String IF_ADMIN = "account";
-    // 用户ID
-    public static final String USER_ID = "user_id";
-    // 用户类型
-    public static final String USER_TYPE = "user_type";
-
-    private SPUtils() {
-        throw new UnsupportedOperationException("u can't instantiate me...");
-    }
-
+    public static final String IF_FIRST = "is_first";//是否第一次进来
+    public static final String IF_ADMIN = "account";//是否为管理员
+    public static final String USER_ID = "user_id";//用户id
+    public static final String USER_TYPE = "user_type";//用户类型
     /**
-     * 保存数据的方法，我们根据数据类型自动调用相应的保存方法
+     * 保存在手机里面的文件名
+     */
+    private static final String FILE_NAME = "share_data";
+    /**
+     * 保存数据的方法，我们需要拿到保存数据的具体类型，然后根据类型调用不同的保存方法
      *
      * @param context 上下文
      * @param key     key值
-     * @param value   数据
-     * @param <T>     泛型类型
+     * @param object  value值
      */
-    public static <T> void put(Context context, String key, T value) {
-        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+    public static void put(Context context, String key, Object object) {
+
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
+                Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
 
-        if (value == null) {
-            return;
-        }
-
-        // 保存不同类型的数据
-        if (value instanceof String) {
-            editor.putString(key, (String) value);
-        } else if (value instanceof Integer) {
-            editor.putInt(key, (Integer) value);
-        } else if (value instanceof Boolean) {
-            editor.putBoolean(key, (Boolean) value);
-        } else if (value instanceof Float) {
-            editor.putFloat(key, (Float) value);
-        } else if (value instanceof Long) {
-            editor.putLong(key, (Long) value);
+        if (object instanceof String) {
+            editor.putString(key, (String) object);
+        } else if (object instanceof Integer) {
+            editor.putInt(key, (Integer) object);
+        } else if (object instanceof Boolean) {
+            editor.putBoolean(key, (Boolean) object);
+        } else if (object instanceof Float) {
+            editor.putFloat(key, (Float) object);
+        } else if (object instanceof Long) {
+            editor.putLong(key, (Long) object);
         } else {
-            editor.putString(key, value.toString());
+            editor.putString(key, object.toString());
         }
 
-        // 使用apply()方法异步保存
-        apply(editor);
+        SharedPreferencesCompat.apply(editor);
     }
 
     /**
-     * 获取数据，根据存储时的类型获取相应的值
+     * 得到保存数据的方法，我们根据默认值得到保存的数据的具体类型，然后调用相对于的方法获取值
      *
      * @param context       上下文
      * @param key           key值
-     * @param defaultValue 默认值
-     * @param <T>           泛型类型
-     * @return 对应类型的值
+     * @param defaultObject 默认value值
+     * @return value值
      */
-    public static <T> T get(Context context, String key, T defaultValue) {
-        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+    public static Object get(Context context, String key, Object defaultObject) {
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
+                Context.MODE_PRIVATE);
 
-        if (defaultValue == null) {
-            return null;
-        }
-
-        // 获取不同类型的数据
-        if (defaultValue instanceof String) {
-            return (T) sp.getString(key, (String) defaultValue);
-        } else if (defaultValue instanceof Integer) {
-            return (T) Integer.valueOf(sp.getInt(key, (Integer) defaultValue));
-        } else if (defaultValue instanceof Boolean) {
-            return (T) Boolean.valueOf(sp.getBoolean(key, (Boolean) defaultValue));
-        } else if (defaultValue instanceof Float) {
-            return (T) Float.valueOf(sp.getFloat(key, (Float) defaultValue));
-        } else if (defaultValue instanceof Long) {
-            return (T) Long.valueOf(sp.getLong(key, (Long) defaultValue));
+        if (defaultObject instanceof String) {
+            return sp.getString(key, (String) defaultObject);
+        } else if (defaultObject instanceof Integer) {
+            return sp.getInt(key, (Integer) defaultObject);
+        } else if (defaultObject instanceof Boolean) {
+            return sp.getBoolean(key, (Boolean) defaultObject);
+        } else if (defaultObject instanceof Float) {
+            return sp.getFloat(key, (Float) defaultObject);
+        } else if (defaultObject instanceof Long) {
+            return sp.getLong(key, (Long) defaultObject);
         }
 
         return null;
@@ -102,10 +83,11 @@ public class SPUtils {
      * @param key     key值
      */
     public static void remove(Context context, String key) {
-        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
+                Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
         editor.remove(key);
-        apply(editor);
+        SharedPreferencesCompat.apply(editor);
     }
 
     /**
@@ -114,10 +96,11 @@ public class SPUtils {
      * @param context 上下文
      */
     public static void clear(Context context) {
-        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
+                Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
         editor.clear();
-        apply(editor);
+        SharedPreferencesCompat.apply(editor);
     }
 
     /**
@@ -128,7 +111,8 @@ public class SPUtils {
      * @return 是否存在
      */
     public static boolean contains(Context context, String key) {
-        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
+                Context.MODE_PRIVATE);
         return sp.contains(key);
     }
 
@@ -139,23 +123,55 @@ public class SPUtils {
      * @return 所有的键值对
      */
     public static Map<String, ?> getAll(Context context) {
-        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
+                Context.MODE_PRIVATE);
         return sp.getAll();
     }
 
     /**
-     * 使用apply方法异步保存数据，如果反射不到apply方法则回退到commit
+     * 创建一个解决SharedPreferencesCompat.apply方法的一个兼容类
      *
-     * @param editor SharedPreferences.Editor对象
+     * @author zhy
      */
-    private static void apply(SharedPreferences.Editor editor) {
-        try {
-            Method applyMethod = SharedPreferences.Editor.class.getMethod("apply");
-            applyMethod.invoke(editor);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            // 如果反射失败，使用commit()来保证数据保存
+    private static class SharedPreferencesCompat {
+        private static final Method sApplyMethod = findApplyMethod();
+
+        /**
+         * 反射查找apply的方法
+         *
+         * @return Method
+         */
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        private static Method findApplyMethod() {
+            try {
+                Class clz = SharedPreferences.Editor.class;
+                return clz.getMethod("apply");
+            } catch (NoSuchMethodException e) {
+            }
+
+            return null;
+        }
+
+        /**
+         * 如果找到则使用apply执行，否则使用commit
+         *
+         * @param editor SharedPreferences.Edito
+         */
+        public static void apply(SharedPreferences.Editor editor) {
+            try {
+                if (sApplyMethod != null) {
+                    sApplyMethod.invoke(editor);
+                    return;
+                }
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
             editor.commit();
-            Log.e("SPUtils", "Failed to invoke apply, using commit instead.");
         }
     }
+
 }

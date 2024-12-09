@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="type">
+        <item >服饰</item>
+        <item >化妆品</item>
+        <item >书本</item>
+        <item >自行车</item>
+        <item >鞋子</item>
+        <item >宿舍用品</item>
+        <item >其他</item>
+    </string-array>
+    <string-array name="report_type">
+        <item >禁限售</item>
+        <item >政治敏感类</item>
+        <item >有害信息</item>
+        <item >假货/盗版</item>
+        <item >其他</item>
+    </string-array>
+</resources>
